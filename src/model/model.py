@@ -10,7 +10,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from PIL import Image
 import tensorflow as tf
 import keras.backend as K
-from tensorflow.models.rnn.translate import data_utils
+from . import data_utils
 
 from .cnn import CNN
 from .seq2seq_model import Seq2SeqModel
@@ -131,7 +131,7 @@ class Model(object):
         with tf.device(gpu_device_id):
             cnn_model = CNN(self.img_data, True) #(not self.forward_only))
             self.conv_output = cnn_model.tf_output()
-            self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
+            self.concat_conv_output = tf.concat(axis=1, values=[self.conv_output, self.zero_paddings])
 
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
 
@@ -194,7 +194,7 @@ class Model(object):
                     with tf.control_dependencies(update_ops):
                         self.updates.append(opt.apply_gradients(zip(gradients, params), global_step=self.global_step))
 
-        self.saver_all = tf.train.Saver(tf.all_variables())
+        self.saver_all = tf.train.Saver(tf.global_variables())
 
         ckpt = tf.train.get_checkpoint_state(model_dir)
         if ckpt and load_model:
@@ -203,7 +203,7 @@ class Model(object):
             self.saver_all.restore(self.sess, ckpt.model_checkpoint_path)
         else:
             logging.info("Created model with fresh parameters.")
-            self.sess.run(tf.initialize_all_variables())
+            self.sess.run(tf.global_variables_initializer())
         #self.sess.run(init_new_vars_op)
 
 
